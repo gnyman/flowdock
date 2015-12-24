@@ -16,8 +16,8 @@ type Client struct {
 	apiKey         string
 	streamClient   *httpstream.Client
 	organizations  []Organization
-	availableFlows []Flow // TODO: Change to map[ID]Flow
-	users          map[string]User
+	AvailableFlows []Flow // TODO: Change to map[ID]Flow
+	Users          map[string]User
 }
 
 // NewClient creates a new Client and automatically fetches
@@ -30,7 +30,7 @@ func NewClient(apiKey string) *Client {
 
 	go func() {
 		var err error
-		client.users, err = getUsers(apiKey)
+		client.Users, err = getUsers(apiKey)
 		if err != nil {
 			log.Printf("Failed to get users: %v", err)
 		}
@@ -39,7 +39,7 @@ func NewClient(apiKey string) *Client {
 
 	go func() {
 		var err error
-		client.availableFlows, err = getFlows(apiKey)
+		client.AvailableFlows, err = getFlows(apiKey)
 		if err != nil {
 			log.Printf("Failed to get flows: %v", err)
 		}
@@ -110,13 +110,13 @@ func (c *Client) Connect(flows []Flow, events chan Event) error {
 
 // DetailsForUser returns a User object for the given user ID.
 func (c *Client) DetailsForUser(id string) User {
-	return c.users[id]
+	return c.Users[id]
 }
 
 // DetailsForFlow returns a Flow object for the given Flow ID
 // or nil if the client can't access details for that flow.
 func (c *Client) DetailsForFlow(id string) *Flow {
-	for _, flow := range c.availableFlows {
+	for _, flow := range c.AvailableFlows {
 		if flow.ID == id {
 			return &flow
 		}
@@ -142,7 +142,7 @@ func SendReply(flow Flow, reply string, threadID int64) error {
 func flowStreamURL(c *Client, flows []Flow) string {
 	if flows == nil {
 		// Add all the flows!
-		flows = c.availableFlows
+		flows = c.AvailableFlows
 	}
 
 	flowURL := "https://stream.flowdock.com/flows?filter="
