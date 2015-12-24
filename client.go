@@ -94,6 +94,9 @@ func (c *Client) Connect(flows []Flow, events chan Event) error {
 				}
 				parsedEvent, err := unmarshalFlowdockJSONEvent(event)
 				if err != nil {
+					log.Printf("Error could not unmarshal json, error %v, raw json: %v", err, string(event))
+					log.Printf("RAW: %v", event)
+					log.Printf("String: %v", string(event))
 					events <- err
 				} else {
 					events <- parsedEvent
