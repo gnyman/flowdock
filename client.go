@@ -101,9 +101,12 @@ func (c *Client) Connect(flows []Flow, events chan Event) error {
 
 			case err := <-done:
 				if err != nil {
+					log.Printf("Stream error, error %v", err)
+					log.Printf("Reconnecting?")
+					c.streamClient.Connect(flowURL, done)
 					// TODO: Actually handle errors instead of just closing the channel
 					events <- err
-					close(events)
+					//close(events)
 				}
 			}
 		}
