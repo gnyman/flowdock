@@ -4,10 +4,13 @@
 package flowdock
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 // flowdockGET is a convenience function for performing
@@ -50,6 +53,108 @@ func pushMessage(flowAPIKey, message, sender string, threadID int64) error {
 		return err
 	}
 	return nil
+}
+
+func SendMessageToFlowWithApiKey(apiKey, flowID, threadID, message string) ([]byte, error) {
+	postURL := fmt.Sprintf("https://api.flowdock.com/messages")
+
+	data := url.Values{}
+	data.Set("flow", flowID)
+	data.Set("content", message)
+	data.Set("thread_id", threadID)
+	data.Set("event", "message")
+
+	req, err := http.NewRequest("POST", postURL, strings.NewReader(data.Encode()))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.SetBasicAuth(apiKey, "BATMAN")
+
+	client := http.Client{}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return body, nil
+}
+
+func EditMessageInFlowWithApiKey(apiKey, organisation, flow, messageID, newMessage string, tags []string) ([]byte, error) {
+	getMessageURL := fmt.Sprintf("https://api.flowdock.com/flows/%s/%s/messages/%s", organisation, flow, messageID)
+	prevMessageBytes, err := flowdockGET(apiKey, getMessageURL)
+	if err != nil {
+		log.Printf("Error could not get message, error was %v", err)
+	}
+	prevMessage := MessageEvent{}
+	err = json.Unmarshal(prevMessageBytes, &prevMessage)
+	mergedTags := append(prevMessage.Tags, tags...)
+	postURL := fmt.Sprintf("https://api.flowdock.com/flows/%s/%s/messages/%s", organisation, flow, messageID)
+	log.Printf("Trying to edit %s", postURL)
+	data := url.Values{}
+	tags_string := strings.Join(mergedTags, ",")
+	data.Set("tags", string(tags_string))
+
+	req, err := http.NewRequest("PUT", postURL, strings.NewReader(data.Encode()))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.SetBasicAuth(apiKey, "BATMAN")
+
+	client := http.Client{}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return body, nil
+}
+
+func SendCommentToFlowWithApiKey(apiKey, flowID, messageID, message string) ([]byte, error) {
+	postURL := fmt.Sprintf("https://api.flowdock.com/comments")
+
+	data := url.Values{}
+	data.Set("flow", flowID)
+	data.Set("content", message)
+	data.Set("message", messageID)
+	data.Set("event", "comment")
+
+	req, err := http.NewRequest("POST", postURL, strings.NewReader(data.Encode()))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.SetBasicAuth(apiKey, "BATMAN")
+
+	client := http.Client{}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return body, nil
 }
 
 // PushMessageToFlowWithKey can uses the Flowdock "Push" API to start
