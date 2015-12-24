@@ -88,6 +88,10 @@ func (c *Client) Connect(flows []Flow, events chan Event) error {
 		for {
 			select {
 			case event := <-stream:
+				if bytes.Equal(event, []byte{10}) {
+					log.Printf("Keepalive, ignore...")
+					continue
+				}
 				parsedEvent, err := unmarshalFlowdockJSONEvent(event)
 				if err != nil {
 					events <- err
