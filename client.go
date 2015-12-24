@@ -1,10 +1,11 @@
 package flowdock
 
 import (
-	"github.com/njern/httpstream"
 	"bytes"
 	"log"
 	"sync"
+
+	"github.com/njern/httpstream"
 )
 
 const (
